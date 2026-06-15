@@ -11,12 +11,22 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://signflow-document-signature-app-dop.vercel.app",
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
+
+app.use(express.json({ limit: "20mb" }));
 
 connectDB();
 
-// Auth Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/docs", documentRoutes);
 app.use("/uploads", express.static("uploads"));
