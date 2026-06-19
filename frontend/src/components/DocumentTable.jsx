@@ -11,6 +11,8 @@ import {
   XCircle,
 } from "lucide-react";
 
+const BACKEND_URL = "https://signflow-document-signature-app.onrender.com";
+
 function DocumentTable({ documents, onDelete }) {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -40,41 +42,46 @@ function DocumentTable({ documents, onDelete }) {
   }, [documents, search, filter]);
 
   const handleView = (doc) => {
-    window.open(`https://signflow-document-signature-app.onrender.com/${getViewPath(doc)}`, "_blank");
+    window.open(`${BACKEND_URL}/${getViewPath(doc)}`, "_blank");
   };
 
   const handleDownload = async (doc) => {
-    const url =
-      doc.status === "Signed" && doc.signedFileUrl
-        ? `https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/download-signed`
-        : `https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/download-original`;
+    try {
+      const url =
+        doc.status === "Signed" && doc.signedFileUrl
+          ? `${BACKEND_URL}/api/docs/${doc._id}/download-signed`
+          : `${BACKEND_URL}/api/docs/${doc._id}/download-original`;
 
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    if (!res.ok) {
-      alert("Download failed");
-      return;
+      if (!res.ok) {
+        alert("Download failed");
+        return;
+      }
+
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download =
+        doc.status === "Signed" && doc.signedFileName
+          ? doc.signedFileName
+          : doc.fileName;
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Download Error:", error);
+      alert("Download failed. Check console.");
     }
-
-    const blob = await res.blob();
-    const downloadUrl = window.URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download =
-      doc.status === "Signed" && doc.signedFileName
-        ? doc.signedFileName
-        : doc.fileName;
-
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    window.URL.revokeObjectURL(downloadUrl);
   };
 
   const handleSign = (doc) => {
@@ -82,22 +89,31 @@ function DocumentTable({ documents, onDelete }) {
   };
 
   const handleShare = async (doc) => {
-    const res = await fetch(`https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/share`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/docs/${doc._id}/share`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      alert(data.message || "Failed to generate share link");
-      return;
+      if (!res.ok) {
+        alert(data.message || "Failed to generate share link");
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(data.shareUrl);
+        alert("Public signing link copied!");
+      } catch {
+        alert(`Public signing link:\n${data.shareUrl}`);
+      }
+    } catch (error) {
+      console.error("Share Error:", error);
+      alert("Share failed. Check console.");
     }
-
-    await navigator.clipboard.writeText(data.shareUrl);
-    alert("Public signing link copied!");
   };
 
   const handleInvite = async (doc) => {
@@ -105,24 +121,30 @@ function DocumentTable({ documents, onDelete }) {
 
     if (!email) return;
 
-    const res = await fetch(`https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/invite`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ email }),
-    });
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/docs/${doc._id}/invite`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      alert(data.message || "Invite failed");
-      return;
+      console.log("Invite Response:", data);
+
+      if (!res.ok) {
+        alert(data.message || "Invite failed");
+        return;
+      }
+
+      alert("Email sent successfully!");
+    } catch (error) {
+      console.error("Invite Error:", error);
+      alert("Email invite failed. Check console.");
     }
-
-    await navigator.clipboard.writeText(data.shareUrl);
-    alert(`${data.message}\nSigning link copied!`);
   };
 
   const handleReject = async (doc) => {
@@ -130,24 +152,29 @@ function DocumentTable({ documents, onDelete }) {
 
     if (!reason) return;
 
-    const res = await fetch(`https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/reject`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ reason }),
-    });
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/docs/${doc._id}/reject`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      alert(data.message || "Reject failed");
-      return;
+      if (!res.ok) {
+        alert(data.message || "Reject failed");
+        return;
+      }
+
+      alert("Document rejected successfully");
+      window.location.reload();
+    } catch (error) {
+      console.error("Reject Error:", error);
+      alert("Reject failed. Check console.");
     }
-
-    alert("Document rejected successfully");
-    window.location.reload();
   };
 
   return (
@@ -226,6 +253,7 @@ function DocumentTable({ documents, onDelete }) {
                           {new Date(doc.createdAt).toLocaleDateString()} ·{" "}
                           {Math.round(doc.fileSize / 1024)} KB
                         </small>
+
                         {doc.status === "Rejected" && doc.rejectReason && (
                           <small className="reject-reason">
                             Reason: {doc.rejectReason}
@@ -282,7 +310,7 @@ function DocumentTable({ documents, onDelete }) {
                       </>
                     )}
 
-                    <button onClick={() => handleShare(doc)} title="Share">
+                    <button onClick={() => handleShare(doc)} title="Copy Link">
                       <Share2 size={16} />
                     </button>
 
