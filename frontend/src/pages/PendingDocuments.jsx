@@ -1,23 +1,27 @@
 import { useEffect, useState } from "react";
-import { Eye, Download, RotateCcw, XCircle } from "lucide-react";
+import { Eye, Download, PenLine, Mail, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import API from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 
-function RejectedDocuments() {
+const BACKEND_URL = "https://signflow-document-signature-app.onrender.com";
+
+function PendingDocuments() {
   const [documents, setDocuments] = useState([]);
   const token = localStorage.getItem("token");
+  const navigate = useNavigate();
 
   const fetchDocuments = async () => {
     const res = await API.get("/docs", {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    const rejectedDocs = (res.data.documents || []).filter(
-      (doc) => doc.status === "Rejected"
+    const pendingDocs = (res.data.documents || []).filter(
+      (doc) => doc.status === "Pending"
     );
 
-    setDocuments(rejectedDocs);
+    setDocuments(pendingDocs);
   };
 
   useEffect(() => {
@@ -26,16 +30,18 @@ function RejectedDocuments() {
 
   const handleView = (doc) => {
     const filePath = doc.fileUrl.replaceAll("\\", "/");
-    window.open(`https://signflow-document-signature-app.onrender.com/${filePath}`, "_blank");
+    window.open(`${BACKEND_URL}/${filePath}`, "_blank");
   };
 
   const handleDownload = async (doc) => {
-    const res = await fetch(
-      `https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/download-original`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    const res = await fetch(`${BACKEND_URL}/api/docs/${doc._id}/download-original`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) {
+      alert("Download failed");
+      return;
+    }
 
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
@@ -50,15 +56,42 @@ function RejectedDocuments() {
     window.URL.revokeObjectURL(url);
   };
 
+  const handleSign = (doc) => {
+    navigate("/sign", { state: { document: doc } });
+  };
+
+  const handleInvite = async (doc) => {
+    const email = prompt("Enter signer email:");
+    if (!email) return;
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/docs/${doc._id}/invite`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Invite failed");
+        return;
+      }
+
+      alert("Email invite sent successfully!");
+    } catch (error) {
+      console.error("Invite Error:", error);
+      alert("Email invite failed");
+    }
+  };
+
   const totalSize = documents.reduce(
     (sum, doc) => sum + Math.round((doc.fileSize || 0) / 1024),
     0
   );
-
-  const lastRejected =
-    documents.length > 0
-      ? new Date(documents[0].rejectedAt || documents[0].updatedAt).toLocaleDateString()
-      : "N/A";
 
   return (
     <div className="app-layout">
@@ -67,20 +100,20 @@ function RejectedDocuments() {
       <main className="main-content">
         <Navbar />
 
-        <div className="rejected-hero">
+        <div className="pending-hero">
           <div>
-            <h1>Rejected Documents</h1>
-            <p>Documents that were declined with rejection reasons.</p>
+            <h1>Pending Documents</h1>
+            <p>Documents waiting for signature completion.</p>
           </div>
 
-          <div className="rejected-hero-icon">
-            <XCircle size={42} />
+          <div className="pending-hero-icon">
+            <Clock size={42} />
           </div>
         </div>
 
         <div className="rejected-summary-grid">
           <div className="rejected-summary-card">
-            <span>Total Rejected</span>
+            <span>Total Pending</span>
             <h2>{documents.length}</h2>
           </div>
 
@@ -90,34 +123,28 @@ function RejectedDocuments() {
           </div>
 
           <div className="rejected-summary-card">
-            <span>Last Rejected</span>
-            <h2>{lastRejected}</h2>
+            <span>Status</span>
+            <h2>Pending</h2>
           </div>
         </div>
 
         <div className="rejected-doc-grid">
           {documents.length === 0 ? (
-            <div className="rejected-empty">No rejected documents yet.</div>
+            <div className="rejected-empty">No pending documents yet.</div>
           ) : (
             documents.map((doc) => (
               <div className="rejected-doc-card" key={doc._id}>
                 <div className="rejected-doc-top">
                   <div className="rejected-pdf-badge">PDF</div>
-                  <span className="rejected-badge">Rejected</span>
+                  <span className="status">Pending</span>
                 </div>
 
                 <h3>{doc.title}</h3>
 
                 <p>
-                  Rejected on{" "}
-                  {new Date(doc.rejectedAt || doc.updatedAt).toLocaleDateString()} ·{" "}
+                  Uploaded on {new Date(doc.createdAt).toLocaleDateString()} ·{" "}
                   {Math.round(doc.fileSize / 1024)} KB
                 </p>
-
-                <div className="rejected-reason-box">
-                  <strong>Reason</strong>
-                  <span>{doc.rejectReason || "No reason provided"}</span>
-                </div>
 
                 <div className="rejected-actions">
                   <button onClick={() => handleView(doc)}>
@@ -130,9 +157,14 @@ function RejectedDocuments() {
                     Download
                   </button>
 
-                  <button onClick={() => alert("Re-upload or edit flow can be added next.")}>
-                    <RotateCcw size={16} />
-                    Re-submit
+                  <button onClick={() => handleSign(doc)}>
+                    <PenLine size={16} />
+                    Sign
+                  </button>
+
+                  <button onClick={() => handleInvite(doc)}>
+                    <Mail size={16} />
+                    Invite
                   </button>
                 </div>
               </div>
@@ -144,4 +176,4 @@ function RejectedDocuments() {
   );
 }
 
-export default RejectedDocuments;
+export default PendingDocuments;
