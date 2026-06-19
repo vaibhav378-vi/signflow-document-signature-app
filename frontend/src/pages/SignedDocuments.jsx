@@ -26,12 +26,12 @@ function SignedDocuments() {
 
   const handleView = (doc) => {
     const filePath = (doc.signedFileUrl || doc.fileUrl).replaceAll("\\", "/");
-    window.open(`http://localhost:5000/${filePath}`, "_blank");
+    window.open(`https://signflow-document-signature-app.onrender.com/${filePath}`, "_blank");
   };
 
   const handleDownload = async (doc) => {
     const res = await fetch(
-      `http://localhost:5000/api/docs/${doc._id}/download-signed`,
+      `https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/download-signed`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -51,7 +51,7 @@ function SignedDocuments() {
   };
 
   const handleShare = async (doc) => {
-    const res = await fetch(`http://localhost:5000/api/docs/${doc._id}/share`, {
+    const res = await fetch(`https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/share`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });

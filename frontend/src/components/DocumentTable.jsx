@@ -40,14 +40,14 @@ function DocumentTable({ documents, onDelete }) {
   }, [documents, search, filter]);
 
   const handleView = (doc) => {
-    window.open(`http://localhost:5000/${getViewPath(doc)}`, "_blank");
+    window.open(`https://signflow-document-signature-app.onrender.com/${getViewPath(doc)}`, "_blank");
   };
 
   const handleDownload = async (doc) => {
     const url =
       doc.status === "Signed" && doc.signedFileUrl
-        ? `http://localhost:5000/api/docs/${doc._id}/download-signed`
-        : `http://localhost:5000/api/docs/${doc._id}/download-original`;
+        ? `https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/download-signed`
+        : `https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/download-original`;
 
     const res = await fetch(url, {
       headers: {
@@ -82,7 +82,7 @@ function DocumentTable({ documents, onDelete }) {
   };
 
   const handleShare = async (doc) => {
-    const res = await fetch(`http://localhost:5000/api/docs/${doc._id}/share`, {
+    const res = await fetch(`https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/share`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -105,7 +105,7 @@ function DocumentTable({ documents, onDelete }) {
 
     if (!email) return;
 
-    const res = await fetch(`http://localhost:5000/api/docs/${doc._id}/invite`, {
+    const res = await fetch(`https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/invite`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -130,7 +130,7 @@ function DocumentTable({ documents, onDelete }) {
 
     if (!reason) return;
 
-    const res = await fetch(`http://localhost:5000/api/docs/${doc._id}/reject`, {
+    const res = await fetch(`https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/reject`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",

@@ -26,12 +26,12 @@ function RejectedDocuments() {
 
   const handleView = (doc) => {
     const filePath = doc.fileUrl.replaceAll("\\", "/");
-    window.open(`http://localhost:5000/${filePath}`, "_blank");
+    window.open(`https://signflow-document-signature-app.onrender.com/${filePath}`, "_blank");
   };
 
   const handleDownload = async (doc) => {
     const res = await fetch(
-      `http://localhost:5000/api/docs/${doc._id}/download-original`,
+      `https://signflow-document-signature-app.onrender.com/api/docs/${doc._id}/download-original`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
