@@ -1,29 +1,22 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async ({ to, subject, html }) => {
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    family: 4,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
-  });
-
-  const info = await transporter.sendMail({
-    from: `"SignFlow" <${process.env.EMAIL_USER}>`,
-    to,
+  const { data, error } = await resend.emails.send({
+    from: process.env.EMAIL_FROM || "SignFlow <onboarding@resend.dev>",
+    to: [to],
     subject,
     html,
   });
 
-  console.log("Email sent:", info.messageId);
+  if (error) {
+    console.error("RESEND ERROR:", error);
+    throw new Error(error.message || "Email sending failed");
+  }
+
+  console.log("RESEND EMAIL SENT:", data);
+  return data;
 };
 
 export default sendEmail;
