@@ -3,6 +3,9 @@ import { useParams } from "react-router-dom";
 import SignatureCanvas from "react-signature-canvas";
 import API from "../api/axios";
 
+const BACKEND_URL =
+  "https://signflow-document-signature-app.onrender.com";
+
 const PREVIEW_WIDTH = 700;
 const PREVIEW_HEIGHT = 720;
 const MARKER_WIDTH = 160;
@@ -71,6 +74,7 @@ function PublicSign() {
 
     try {
       setLoading(true);
+
       const signatureImage = sigRef.current.toDataURL("image/png");
 
       const res = await API.post("/signatures/public-sign", {
@@ -127,7 +131,7 @@ function PublicSign() {
           >
             <iframe
               title="Public Document"
-              src={`http://localhost:5000/${filePath}`}
+              src={`${BACKEND_URL}/${filePath}`}
               className="public-pdf-frame"
             />
 
@@ -158,9 +162,10 @@ function PublicSign() {
           {document.status === "Signed" ? (
             <>
               <p>This document has been signed successfully.</p>
+
               <button
                 onClick={() =>
-                  window.open(`http://localhost:5000/${filePath}`, "_blank")
+                  window.open(`${BACKEND_URL}/${filePath}`, "_blank")
                 }
               >
                 View Signed PDF
@@ -169,6 +174,7 @@ function PublicSign() {
           ) : (
             <>
               <label>Your Name</label>
+
               <input
                 type="text"
                 placeholder="Enter your name"
@@ -177,6 +183,7 @@ function PublicSign() {
               />
 
               <label>Page</label>
+
               <input
                 type="number"
                 min="1"
@@ -200,6 +207,7 @@ function PublicSign() {
 
               <div className="public-actions">
                 <button onClick={clearSignature}>Clear</button>
+
                 <button onClick={savePublicSignature} disabled={loading}>
                   {loading ? "Signing..." : "Submit Signature"}
                 </button>
